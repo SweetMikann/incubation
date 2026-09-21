@@ -1,0 +1,18 @@
+{
+  "name": "incubation",
+  "version": "0.1.0",
+  "description": "潜伏期 / Incubation —— 两人对局：一个当瘟疫，一个当人类。A two-player outbreak duel.",
+  "license": "MIT",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test test/*.test.cjs",
+    "plague-sweep": "node scripts/plague-sweep.cjs"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

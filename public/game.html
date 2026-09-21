@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- iOS 18.0.x standalone bug 绕开：必须 black，绝不用 black-translucent -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>潜伏期</title>
+  <!-- ★2026-09-05 01:50 她：「设计语言统一」。跟麻将馆同一套地基：
+       boot.js 先同步跑注入 token（防首屏闪），再是共享的 swp2/base，最后是牌桌通用件。 -->
+  <script src="/assets-theme/boot.js?v=20260823000126"></script>
+  <script src="/assets-theme/icons.js?v=20260823000126"></script>
+  <link rel="stylesheet" href="/assets-theme/swp2.css?v=2">
+  <link rel="stylesheet" href="/assets-theme/base.css?v=20260829c">
+  <link rel="stylesheet" href="base-cards.css?v=20260905">
+  <link rel="stylesheet" href="plague.css?v=20260911toast">
+</head>
+<body>
+  <div class="cn-aurora"></div>
+
+  <div class="pg pg-game">
+    <!-- ★2026-09-05 16:14 她圈了两张图：「设计语言不统一了」——顶栏照麻将馆那套 .mono-top：
+         左 ‹ 回大厅、房名靠左＋小字房号、右边一颗连接点。
+         「还要有结束和暂停哦」「暂停和结束只有房主才有」「邀请只出现在开房」：
+         三颗按钮都在这一行，邀请只在对面还没进来时亮，暂停/结束只房主看得见。 -->
+    <header class="mono-top pg-top">
+      <div class="mono-top-row">
+        <a class="mono-back cd-back" id="back" href="./" aria-label="回大厅"></a>
+        <div class="mono-title"><div class="nm" id="roomName">潜伏期</div><div class="cd" id="roomCode"></div></div>
+        <div class="mono-link" id="conn" data-conn="boot"><span class="dot"></span><span class="tx" id="connTx">连接中</span></div>
+        <button class="mono-sharebtn" id="invite" type="button" hidden>邀请</button>
+        <button class="mono-sharebtn" id="pause" type="button" hidden>暂停</button>
+        <button class="mono-endbtn" id="end" type="button" hidden>结束</button>
+      </div>
+      <!-- 16:28 她手机上标题被挤成「第…」、房号折三行：天数/轮次太长，塞不进顶行。挪到第二行，顶行只留一颗「实时」点。 -->
+    </header>
+
+    <section class="cn-card pg-card" id="hint" hidden></section>
+
+    <section class="cn-card pg-card pg-map-card">
+      <!-- ★2026-09-11 14:57 她圈了这个角：「黄色部分加个聊天的图标」——聊天入口放地图卡右上角，点开小窗 -->
+      <div class="pg-map-heading"><div><span class="pg-eyebrow">全球态势</span><h2>世界疫情地图</h2></div><span class="pg-map-caption">双指缩放 · 拖动地图</span>
+        <!-- 15:04 她：「不用加圈，就固定在那个位置，不用跟着滑动往下」——两颗裸图标钉在地图卡右上角，随页滚 -->
+        <div class="pg-fabs" id="fabs">
+    <button type="button" class="pg-chat-fab" id="logFab" aria-label="疫情通报"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h13v13H6a2 2 0 0 1-2-2Z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 10h7M7 13h7M7 16h4"/></svg><i id="logBadge" hidden></i></button>
+    <button type="button" class="pg-chat-fab" id="chatFab" aria-label="聊天"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4Z"/><path d="M8 9h8M8 12.5h5"/></svg><i id="chatBadge" hidden></i></button>
+  </div>
+      </div>
+      <div id="map" class="map"></div>
+      <div class="map-legend" aria-label="地图图例"><span><i class="legend-clean"></i>无已知感染</span><span><i class="legend-sick"></i>感染</span><span><i class="legend-fog"></i>未公开</span><span><i class="legend-gone"></i>人口耗尽</span></div>
+      <div id="detail" class="wm-detail" aria-live="polite">点地图上的国家看细节</div>
+    </section>
+
+    <div class="pg-news" aria-label="全球新闻"><b>全球新闻</b><div class="pg-news-window"><div id="newsTicker">等待疫情动态…</div></div><button id="newsPause" type="button" aria-label="暂停新闻">Ⅱ</button><button id="newsNext" type="button" aria-label="下一条新闻">›</button></div>
+
+    <section class="cn-card pg-card pg-bars">
+      <div class="bar"><em>健康</em><span id="numHealthy">-</span><div class="bar-track"><i id="barHealthy"></i></div></div>
+      <div class="bar inf"><em>感染</em><span id="numInfected">-</span><div class="bar-track"><i id="barInfected"></i></div></div>
+      <div class="bar dead"><em>死亡</em><span id="numDead">-</span><div class="bar-track"><i id="barDead"></i></div></div>
+      <div class="bar cure"><em>解药</em><span id="numCure">-</span><div class="bar-track"><i id="barCure"></i></div></div>
+    </section>
+
+    <section class="cn-card pg-card pg-actions">
+      <div class="hd pg-wallet-head">
+        <span class="ic" id="ic-hand"></span>
+        <span id="wallet">—</span>
+        <span id="incomeHint" class="income-hint"></span>
+      </div>
+      <div id="cards" class="cards"></div>
+      <button class="cd-btn cd-btn--primary cd-btn--wide" id="pass">结束本回合</button>
+    </section>
+
+  </div>
+
+  <!-- 2026-09-05 13:37 她：「你得把聊天和疫情通报分开」——通报在上面那张卡里，聊天单独一块。
+       ★2026-09-11 14:45 她（试玩中）：「打字的聊天框不是自动弹出，而是需要手动往下滑」；
+       14:52「聊天板块好奇怪」（第一版只把输入条拎出来、最新一句跟卡里重了）——
+       改成麻将馆/飞行棋那块 .mono-chat：几行记录＋输入条整块贴底（sticky：翻到页底归位，没翻到就跟着屏幕）。 -->
+  <!-- ★2026-09-11 14:57 她：「我有一计！干脆做那种小窗口好了」——
+       聊天不占版面：右下角一颗小气泡，点开是一扇小窗（记录＋输入条），关上就藏着；
+       对面说了话、窗没开，气泡上冒个数。（前两版：贴底横条→她「好奇怪」；浮起的整张卡→「更奇怪了」，盖住了结束回合） -->
+  <!-- 14:58 她：「像悬浮那种，如果你打字了有小红点」；14:58 她画了一大块：「聊天页直接占这一块，点边缘消失」；
+       15:00「疫情通报不如也显示在这」「这样占据一整页，还不用往下拉」「你画个小图标那种」「在气泡边上」——
+       两颗悬浮小图标并排在她圈的那个角（地图卡右上）：通报 + 聊天气泡，各开小窗的一页；点卡外收起；页底那张通报卡撤了 -->
+  <div class="pg-chat-mask" id="chatWin" hidden>
+    <div class="cn-card pg-chat-win" id="chatCard" data-tab="chat">
+      <div class="pg-chat-win-hd"><div class="pg-chat-tabs"><button type="button" class="is-on" data-tab="chat">聊天</button><button type="button" data-tab="log">疫情通报</button></div><span class="pg-chat-win-tip">点外面收起</span></div>
+      <div id="chat" class="mono-chat-log"></div>
+      <div id="opponentRecent" class="pg-opponent" hidden><h3>对方最近三手</h3><div id="opponentActions"></div></div>
+      <div id="log" class="log" tabindex="0" aria-label="按天分组的完整疫情通报"></div>
+      <form class="mono-chat-bar" id="sayForm" autocomplete="off">
+        <textarea id="say" rows="1" maxlength="200" placeholder="说点什么…" enterkeyhint="send"></textarea>
+        <button type="submit" id="sayBtn">发送</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="over" class="cd-mask" hidden><div class="cn-card cd-sheet">
+    <h2 id="overTitle">打完了</h2>
+    <p id="overWhy"></p>
+    <ul id="overStats" class="pg-stats"></ul>
+    <!-- 17:00 她：「只能选择再来一局，没有结束吗」——加一颗「看终局」，关掉弹层留在终局盘面上 -->
+    <div class="cd-sheet-acts">
+      <button class="cd-btn" id="overClose" type="button">看终局</button>
+      <button class="cd-btn cd-btn--primary" id="again" type="button">再来一局</button>
+    </div>
+  </div></div>
+
+  <div id="picker" class="cd-mask" hidden><div class="cn-card cd-sheet">
+    <h2 id="pickTitle">选一个国家</h2>
+    <div id="pickList" class="picklist"></div>
+    <button class="cd-btn cd-btn--wide" id="pickCancel">算了</button>
+  </div></div>
+
+  <span id="phase" hidden></span><span id="focusResource" hidden></span>
+
+  <script src="/plague/js/plague-presentation.js?v=20260907maptouch"></script>
+  <script src="/plague/js/ui.js?v=20260905lobby"></script>
+  <script src="/plague/js/plague-icons.js?v=20260907maptouch"></script>
+  <script src="/plague/js/plague-ui-model.js?v=20260911s9"></script>
+  <script src="/plague/js/world-countries.js?v=20260905a"></script>
+  <script src="/plague/js/worldmap.js?v=20260907maptouch"></script>
+  <script src="/plague/js/game.js?v=202609212219s9"></script>
+</body>
+</html>

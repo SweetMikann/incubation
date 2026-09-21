@@ -1,0 +1,7 @@
+# 房间存档/主人配置不进仓库；world.cjs 是引擎必需的生成数据
+# （scripts/build-world-map.cjs 从 Natural Earth 110m 生成），要进
+node_modules/
+data/*
+!data/world.cjs
+data-public/
+*.log
